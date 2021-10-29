@@ -1,6 +1,6 @@
 import socketserver
 import time
-from sys import getsizeof
+from sys import getsizeof, argv
 
 cache = {}
 
@@ -85,5 +85,5 @@ class RequestHandler(socketserver.StreamRequestHandler):
                 dataString = f'Utilization: {getsizeof(cache)} bytes'
                 self.wfile.write(str.encode(dataString))
 
-s = CacheServer()
+s = CacheServer(argv[1], int(argv[2]))
 s.start()
