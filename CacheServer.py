@@ -21,17 +21,15 @@ class RequestHandler(socketserver.StreamRequestHandler):
             if not self.rfile.peek():
                 break
 
-            data = str(self.rfile.readline().strip())[2:]
+            data = str(self.rfile.readline().strip())[2:-1]
             print(data)
 
             command, data = data.split(':')
 
             command = command.lower()
-            print(command)
-            if command == 'set':
-                print('in command')
-                data = data.split(',')
+            data = data.split(',')
 
+            if command == 'set':
                 timeout = None
                 if int(data[2]) != 0:
                     timeout = time.time() + int(data[2])
@@ -49,8 +47,30 @@ class RequestHandler(socketserver.StreamRequestHandler):
                 cache[data[0]] = dataToCache
 
                 print(cache)
-            elif command == b'get':
-                pass
+            elif command == 'get':
+                print('getting')
+                if data[0] not in cache:
+                    self.wfile.write(b'')
+                    print('not found')
+                    print(data[0])
+                    continue
+
+                dataFromCache = cache[data[0]]
+                if dataFromCache['private'] != False and dataFromCache['private'] != self.client_address[0]:
+                    self.wfile.write(b'')
+                    print('invalid user')
+                    continue
+                
+                if dataFromCache['timeout'] != None and time.time() > dataFromCache['timeout']:
+                    cache.pop(data[0], None)
+                    self.wfile.write(b'')
+                    print('timeout')
+                    continue
+
+                print('fetched data from cache')
+
+                self.wfile.write(str.encode(dataFromCache['value']))
+
             elif command == b'cu':
                 pass
             elif command == b'rm':
