@@ -1,7 +1,7 @@
 import socket
 
 class CacheClient:
-    def __init__(host='0.0.0.0', port=11191, protocol='tcp'):
+    def __init__(self, host='0.0.0.0', port=1191, protocol='tcp'):
         self.host = host
         self.port = port
         self.protocol = protocol.lower()
@@ -14,11 +14,13 @@ class CacheClient:
         self.sock = socket.socket(socket.AF_INET, conn_type)
         self.sock.connect((self.host, self.port))
 
-    def sendReques(self, req):
+    def sendRequest(self, req):
+        print(req)
         if self.protocol == 'tcp':
-            sock.sendall(bytes(data + "\n", "utf-8"))
+            print('making tcp req')
+            self.sock.sendall(bytes(req + "\n", "utf-8"))
         elif self.protocol == 'udp':
-            sock.sendto(bytes(data + "\n", "utf-8"), (self.host, self.port))
+            self.sock.sendto(bytes(req + "\n", "utf-8"), (self.host, self.port))
     
     def getData(self):
         received = str(sock.recv(1024), "utf-8")
@@ -29,7 +31,8 @@ class CacheClient:
         pass
     
     def setData(self, key, value, timeout, private):
-        pass
+        dataString = f'set:{str(key)},{str(value)},{str(timeout)},{str(private)}'
+        self.sendRequest(dataString)
     
     def cleanUp(self):
         pass

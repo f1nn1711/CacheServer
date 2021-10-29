@@ -4,33 +4,37 @@ import time
 cache = {}
 
 class CacheServer:
-    def __init__(host='0.0.0.0', port=11191, handler=RequestHandler):
+    def __init__(self, host='0.0.0.0', port=1191):
         self.host = host
         self.port = port
 
-        self.server = socketserver.TCPServer((self.host, self.port), handler)
-    
-    def start():
-        self.server.serve_forever()
+    def start(self):
+        print(f'Starting cache server on {self.host}:{self.port}')
+        with socketserver.TCPServer((self.host, self.port), RequestHandler) as server:
+            server.serve_forever()
 
 
 class RequestHandler(socketserver.StreamRequestHandler):
-    def handler(self):
+    def handle(self):
         while True:
+            print('in loop')
             if not self.rfile.peek():
                 break
 
-            data = self.rfile.readline().strip()
+            data = str(self.rfile.readline().strip())[2:]
+            print(data)
 
             command, data = data.split(':')
 
             command = command.lower()
-            if command == b'set':
+            print(command)
+            if command == 'set':
+                print('in command')
                 data = data.split(',')
 
                 timeout = None
-                if data[2] != 0:
-                    timeout = time.time() + int(data[0])
+                if int(data[2]) != 0:
+                    timeout = time.time() + int(data[2])
                 
                 private = False
                 if data[3] == 'True':
@@ -51,3 +55,6 @@ class RequestHandler(socketserver.StreamRequestHandler):
                 pass
             elif command == b'rm':
                 pass
+
+s = CacheServer()
+s.start()
