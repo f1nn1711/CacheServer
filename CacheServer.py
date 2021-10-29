@@ -1,5 +1,6 @@
 import socketserver
 import time
+from sys import getsizeof
 
 cache = {}
 
@@ -10,24 +11,29 @@ class CacheServer:
 
     def start(self):
         print(f'Starting cache server on {self.host}:{self.port}')
-        with socketserver.TCPServer((self.host, self.port), RequestHandler) as server:
-            server.serve_forever()
+        try:
+            with socketserver.TCPServer((self.host, self.port), RequestHandler) as server:
+                server.serve_forever()
+        except Exception as e:
+            print(e)
+        finally:
+            quit()
 
 
 class RequestHandler(socketserver.StreamRequestHandler):
     def handle(self):
         while True:
-            print('in loop')
             if not self.rfile.peek():
                 break
 
             data = str(self.rfile.readline().strip())[2:-1]
-            print(data)
 
             command, data = data.split(':')
 
             command = command.lower()
             data = data.split(',')
+
+            print(command)
 
             if command == 'set':
                 timeout = None
@@ -46,35 +52,38 @@ class RequestHandler(socketserver.StreamRequestHandler):
 
                 cache[data[0]] = dataToCache
 
-                print(cache)
             elif command == 'get':
-                print('getting')
                 if data[0] not in cache:
-                    self.wfile.write(b'')
+                    self.wfile.write(b'Error: Data not in cache')
                     print('not found')
                     print(data[0])
                     continue
 
                 dataFromCache = cache[data[0]]
                 if dataFromCache['private'] != False and dataFromCache['private'] != self.client_address[0]:
-                    self.wfile.write(b'')
+                    self.wfile.write(b'Error: IP does not have access')
                     print('invalid user')
                     continue
                 
                 if dataFromCache['timeout'] != None and time.time() > dataFromCache['timeout']:
                     cache.pop(data[0], None)
-                    self.wfile.write(b'')
+                    self.wfile.write(b'Error: data has expired')
                     print('timeout')
                     continue
 
-                print('fetched data from cache')
-
                 self.wfile.write(str.encode(dataFromCache['value']))
 
-            elif command == b'cu':
-                pass
-            elif command == b'rm':
-                pass
+            elif command == 'cu':
+                for key in cache:
+                    if cache[key]['timeout'] != None and time.time() > cache[key]['timeout']:
+                        cache.pop(data[0], None)
+
+            elif command == 'rm':
+                cache.pop(data[0], None)
+
+            elif command == 'sdata':
+                dataString = f'Utilization: {getsizeof(cache)} bytes'
+                self.wfile.write(str.encode(dataString))
 
 s = CacheServer()
 s.start()

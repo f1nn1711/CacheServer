@@ -15,9 +15,7 @@ class CacheClient:
         self.sock.connect((self.host, self.port))
 
     def sendRequest(self, req):
-        print(req)
         if self.protocol == 'tcp':
-            print('making tcp req')
             self.sock.sendall(bytes(req + "\n", "utf-8"))
         elif self.protocol == 'udp':
             self.sock.sendto(bytes(req + "\n", "utf-8"), (self.host, self.port))
@@ -38,7 +36,14 @@ class CacheClient:
         self.sendRequest(dataString)
     
     def cleanUp(self):
-        pass
+        dataString = f'cu:'
+        self.sendRequest(dataString)
     
-    def delData(self):
-        pass
+    def delData(self, key):
+        dataString = f'rm:{str(key)}'
+        self.sendRequest(dataString)
+
+    def getServerData(self):
+        dataString = f'sdata:'
+        self.sendRequest(dataString)
+        return self.recieveData()
